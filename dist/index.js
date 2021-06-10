@@ -130,6 +130,14 @@ const client_1 = __importDefault(__nccwpck_require__(565));
 const statusNameInput_1 = __importDefault(__nccwpck_require__(323));
 const customFieldsWithItemsInput_1 = __importDefault(__nccwpck_require__(161));
 const customFieldsWithoutItemsInput_1 = __importDefault(__nccwpck_require__(422));
+const inputMappers = [
+    { name: "statusName", klass: statusNameInput_1.default },
+    { name: "customFieldsWithItems", klass: customFieldsWithItemsInput_1.default },
+    {
+        name: "customFieldsWithoutItems",
+        klass: customFieldsWithoutItemsInput_1.default,
+    },
+];
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const host = core.getInput("host");
@@ -139,11 +147,12 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
         const issue = yield client.getIssue({
             urlParams: { issueIdOrKey: issueKey },
         });
-        const inputs = [
-            new statusNameInput_1.default(core.getInput("statusName")),
-            new customFieldsWithItemsInput_1.default(core.getInput("customFieldsWithItems")),
-            new customFieldsWithoutItemsInput_1.default(core.getInput("customFieldsWithoutItems")),
-        ];
+        const inputs = inputMappers
+            .map((mapper) => {
+            const bareInput = core.getInput(mapper.name);
+            return bareInput ? new mapper.klass(bareInput) : null;
+        })
+            .filter((input) => Boolean(input));
         const paramsArray = yield Promise.all(inputs.map((input) => __awaiter(void 0, void 0, void 0, function* () { return yield input.toParams(client, issue); })));
         const params = Object.assign({}, ...paramsArray);
         yield client.patchIssue({

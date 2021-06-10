@@ -4,6 +4,15 @@ import StatusNameInput from "./parameterInputs/statusNameInput";
 import CustomFieldsWithItemsInput from "./parameterInputs/customFieldsWithItemsInput";
 import CustomFieldsWithoutItemsInput from "./parameterInputs/customFieldsWithoutItemsInput";
 
+const inputMappers = [
+  { name: "statusName", klass: StatusNameInput },
+  { name: "customFieldsWithItems", klass: CustomFieldsWithItemsInput },
+  {
+    name: "customFieldsWithoutItems",
+    klass: CustomFieldsWithoutItemsInput,
+  },
+];
+
 const main: () => Promise<void> = async () => {
   try {
     const host = core.getInput("host");
@@ -15,13 +24,12 @@ const main: () => Promise<void> = async () => {
       urlParams: { issueIdOrKey: issueKey },
     });
 
-    const inputs = [
-      new StatusNameInput(core.getInput("statusName")),
-      new CustomFieldsWithItemsInput(core.getInput("customFieldsWithItems")),
-      new CustomFieldsWithoutItemsInput(
-        core.getInput("customFieldsWithoutItems")
-      ),
-    ];
+    const inputs = inputMappers
+      .map((mapper) => {
+        const bareInput = core.getInput(mapper.name);
+        return bareInput ? new mapper.klass(bareInput) : null;
+      })
+      .filter((input): input is any => Boolean(input));
 
     const paramsArray = await Promise.all(
       inputs.map(async (input) => await input.toParams(client, issue))
