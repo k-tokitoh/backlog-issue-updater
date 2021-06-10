@@ -1,18 +1,40 @@
-// const core = require("@actions/core");
-// const github = require("@actions/github");
+import * as core from "@actions/core";
+import Client from "./client";
+import StatusNameInput from "./parameterInputs/statusNameInput";
+import CustomFieldsWithItemsInput from "./parameterInputs/customFieldsWithItemsInput";
+import CustomFieldsWithoutItemsInput from "./parameterInputs/customFieldsWithoutItemsInput";
 
-import core from "@actions/core";
-import github from "@actions/github";
+const main: () => Promise<void> = async () => {
+  try {
+    const host = core.getInput("host");
+    const apiKey = core.getInput("apiKey");
+    const client = new Client(host, apiKey);
 
-try {
-  // `who-to-greet` input defined in action metadata file
-  const nameToGreet = core.getInput("who-to-greet");
-  console.log(`Hello ${nameToGreet}!`);
-  const time = new Date().toTimeString();
-  core.setOutput("time", time);
-  // Get the JSON webhook payload for the event that triggered the workflow
-  const payload = JSON.stringify(github.context.payload, undefined, 2);
-  console.log(`The event payload: ${payload}`);
-} catch (error) {
-  core.setFailed(error.message);
-}
+    const issueKey = core.getInput("issueKey");
+    const issue = await client.getIssue({
+      urlParams: { issueIdOrKey: issueKey },
+    });
+
+    const inputs = [
+      new StatusNameInput(core.getInput("statusName")),
+      new CustomFieldsWithItemsInput(core.getInput("customFieldsWithItems")),
+      new CustomFieldsWithoutItemsInput(
+        core.getInput("customFieldsWithoutItems")
+      ),
+    ];
+
+    const paramsArray = await Promise.all(
+      inputs.map(async (input) => await input.toParams(client, issue))
+    );
+    const params = Object.assign({}, ...paramsArray);
+
+    await client.patchIssue({
+      urlParams: { issueIdOrKey: issueKey },
+      requestParams: params,
+    });
+  } catch (error) {
+    core.setFailed(error.message);
+  }
+};
+
+main();
