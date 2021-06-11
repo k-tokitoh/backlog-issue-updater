@@ -77,11 +77,7 @@ type PatchIssueParams = {
   };
 };
 
-type PatchIssueResponse = {
-  status: {
-    name: string;
-  };
-};
+type PatchIssueResponse = Issue;
 
 type FetchParams = {
   method: "GET" | "PATCH";
@@ -101,83 +97,72 @@ export default class Client {
   }
 
   public getIssue: (params: GetIssueParams) => Promise<GetIssueResponse> =
-    async ({ urlParams: { issueIdOrKey } }) => {
-      const body = await this.fetch({
+    async ({ urlParams: { issueIdOrKey } }) =>
+      await this.fetch<GetIssueResponse>({
         method: "GET",
         path: `/issues/${issueIdOrKey}`,
         contentType: "application/json",
       });
-      return body as GetIssueResponse;
-    };
 
   public getCustomFields: (
     params: GetCustomFieldsParams
   ) => Promise<GetCustomFieldsResponse> = async ({
     urlParams: { projectIdOrKey },
-  }) => {
-    const body = await this.fetch({
+  }) =>
+    await this.fetch<GetCustomFieldsResponse>({
       method: "GET",
       path: `/projects/${projectIdOrKey}/customFields`,
       contentType: "application/json",
     });
-    return body as GetCustomFieldsResponse;
-  };
 
   public getStatuses: (
     params: GetStatusesParams
   ) => Promise<GetStatusesResponse> = async ({
     urlParams: { projectIdOrKey },
-  }) => {
-    const body = await this.fetch({
+  }) =>
+    await this.fetch<GetStatusesResponse>({
       method: "GET",
       path: `/projects/${projectIdOrKey}/statuses`,
       contentType: "application/json",
     });
-    return body as GetStatusesResponse;
-  };
 
   public patchIssue: (params: PatchIssueParams) => Promise<PatchIssueResponse> =
-    async ({ urlParams: { issueIdOrKey }, requestParams }) => {
-      const body = await this.fetch({
+    async ({ urlParams: { issueIdOrKey }, requestParams }) =>
+      await this.fetch<PatchIssueResponse>({
         method: "PATCH",
         path: `/issues/${issueIdOrKey}`,
         requestParams: requestParams,
         contentType: "application/x-www-form-urlencoded",
       });
-      return body as GetIssueResponse;
+
+  private fetch: <TResponse>(params: FetchParams) => Promise<TResponse> =
+    async ({ method, path, queryParams, requestParams, contentType }) => {
+      const body = (() => {
+        switch (contentType) {
+          case "application/json":
+            return JSON.stringify(requestParams);
+          case "application/x-www-form-urlencoded":
+            if (!requestParams) return;
+            const encodedRequestParams = new URLSearchParams();
+            Object.keys(requestParams).forEach((key) =>
+              encodedRequestParams.append(key, String(requestParams[key]))
+            );
+            return encodedRequestParams;
+        }
+      })();
+
+      const query = Object.entries({ apiKey: this.apiKey, ...queryParams })
+        .map((e) => e.join("="))
+        .join("&");
+
+      const res = await fetch(`${this.host}${path}?${query}`, {
+        method: method,
+        body: body,
+        headers: { "Content-Type": contentType },
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+
+      return await res.json();
     };
-
-  private fetch: (params: FetchParams) => Promise<object> = async ({
-    method,
-    path,
-    queryParams,
-    requestParams,
-    contentType,
-  }) => {
-    const body = (() => {
-      switch (contentType) {
-        case "application/json":
-          return JSON.stringify(requestParams);
-        case "application/x-www-form-urlencoded":
-          if (!requestParams) return;
-          const encodedRequestParams = new URLSearchParams();
-          Object.keys(requestParams).forEach((key) =>
-            encodedRequestParams.append(key, String(requestParams[key]))
-          );
-          return encodedRequestParams;
-      }
-    })();
-
-    const query = Object.entries({ apiKey: this.apiKey, ...queryParams })
-      .map((e) => e.join("="))
-      .join("&");
-
-    const res = await fetch(`${this.host}${path}?${query}`, {
-      method: method,
-      body: body,
-      headers: { "Content-Type": contentType },
-    });
-
-    return await res.json();
-  };
 }

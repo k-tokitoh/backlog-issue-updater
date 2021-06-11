@@ -13,6 +13,9 @@ inputs:
     required: false
   customFieldsWithoutItems:
     required: false
+outputs:
+  updated:
+    description: "'true' or 'false'"
 runs:
   using: "node12"
   main: "dist/index.js"

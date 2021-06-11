@@ -1,4 +1,5 @@
 import Client, { Issue } from "../client";
+import ParameterInput from "./parameterInput";
 
 type CustomFieldWithItem = {
   name: string;
@@ -6,10 +7,11 @@ type CustomFieldWithItem = {
   upsert?: boolean;
 };
 
-export default class CustomFieldsWithItemsInput {
+export default class CustomFieldsWithItemsInput extends ParameterInput {
   private value: CustomFieldWithItem[];
 
   constructor(bareInput: string) {
+    super();
     this.value = JSON.parse(bareInput);
   }
 
@@ -23,12 +25,23 @@ export default class CustomFieldsWithItemsInput {
     return customFieldsToPatch.reduce(
       (accumulator: { [key in string]: number }, field) => {
         const customField = customFields.find((f) => f.name === field.name);
-        const key = `customField_${customField?.id}`;
-        const itemId = customField?.items.find(
+        if (!customField) {
+          console.error(
+            `custom field "${field.name}" is queried, but not found.`
+          );
+          return accumulator;
+        }
+        const key = `customField_${customField.id}`;
+        const item = customField.items.find(
           (item) => item.name === field.itemName
-        )?.id;
-        if (!itemId) return accumulator;
-        accumulator[key] = itemId;
+        );
+        if (!item) {
+          console.error(
+            `custom field item "${field.name}" is queried, but not found.`
+          );
+          return accumulator;
+        }
+        accumulator[key] = item.id;
         return accumulator;
       },
       {}

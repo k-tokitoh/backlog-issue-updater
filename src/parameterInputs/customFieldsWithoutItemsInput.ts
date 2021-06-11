@@ -1,4 +1,5 @@
 import Client, { Issue } from "../client";
+import ParameterInput from "./parameterInput";
 
 type CustomFieldWithoutItem = {
   name: string;
@@ -6,10 +7,11 @@ type CustomFieldWithoutItem = {
   upsert?: boolean;
 };
 
-export default class CustomFieldsWithoutItemsInput {
+export default class CustomFieldsWithoutItemsInput extends ParameterInput {
   private value: CustomFieldWithoutItem[];
 
   constructor(bareInput: string) {
+    super();
     this.value = JSON.parse(bareInput);
   }
 
@@ -22,8 +24,14 @@ export default class CustomFieldsWithoutItemsInput {
 
     return valuesToPatch.reduce(
       (accumulator: { [key in string]: string }, field) => {
-        const id = customFields.find((f) => f.name === field.name)?.id;
-        const key = `customField_${id}`;
+        const customField = customFields.find((f) => f.name === field.name);
+        if (!customField) {
+          console.error(
+            `custom field "${field.name}" is queried, but not found.`
+          );
+          return accumulator;
+        }
+        const key = `customField_${customField.id}`;
         accumulator[key] = field.value;
         return accumulator;
       },

@@ -1,17 +1,7 @@
 import * as core from "@actions/core";
 import Client from "./client";
-import StatusNameInput from "./parameterInputs/statusNameInput";
-import CustomFieldsWithItemsInput from "./parameterInputs/customFieldsWithItemsInput";
-import CustomFieldsWithoutItemsInput from "./parameterInputs/customFieldsWithoutItemsInput";
-
-const inputMappers = [
-  { name: "statusName", klass: StatusNameInput },
-  { name: "customFieldsWithItems", klass: CustomFieldsWithItemsInput },
-  {
-    name: "customFieldsWithoutItems",
-    klass: CustomFieldsWithoutItemsInput,
-  },
-];
+import ParamsBuilder from "./paramsBuilder";
+import { bareInputNames, BareInputs } from "./constants";
 
 const main: () => Promise<void> = async () => {
   try {
@@ -24,24 +14,27 @@ const main: () => Promise<void> = async () => {
       urlParams: { issueIdOrKey: issueKey },
     });
 
-    const inputs = inputMappers
-      .map((mapper) => {
-        const bareInput = core.getInput(mapper.name);
-        return bareInput ? new mapper.klass(bareInput) : null;
-      })
-      .filter((input): input is any => Boolean(input));
-
-    const paramsArray = await Promise.all(
-      inputs.map(async (input) => await input.toParams(client, issue))
+    const bareInputs = bareInputNames.reduce(
+      (accumulator: BareInputs, name) => {
+        accumulator[name] = core.getInput(name);
+        return accumulator;
+      },
+      {}
     );
-    const params = Object.assign({}, ...paramsArray);
 
-    await client.patchIssue({
+    const params = await ParamsBuilder.execute(bareInputs, client, issue);
+    console.log({ params });
+
+    const patchedIssue = await client.patchIssue({
       urlParams: { issueIdOrKey: issueKey },
       requestParams: params,
     });
-  } catch (error) {
-    core.setFailed(error.message);
+
+    console.log({ patchedIssue });
+    core.setOutput("updated", true);
+  } catch (err) {
+    console.error(err.name + ": " + err.message);
+    core.setOutput("updated", false);
   }
 };
 
