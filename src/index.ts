@@ -23,17 +23,17 @@ const main: () => Promise<void> = async () => {
     );
 
     const params = await ParamsBuilder.execute(bareInputs, client, issue);
-    console.log({ params });
+    core.info(`params: ${JSON.stringify(params)}`);
 
     const patchedIssue = await client.patchIssue({
       urlParams: { issueIdOrKey: issueKey },
       requestParams: params,
     });
 
-    console.log({ patchedIssue });
+    core.info(`patchedIssue: ${JSON.stringify(patchedIssue)}`);
     core.setOutput("updated", true);
   } catch (err) {
-    console.error(err.name + ": " + err.message);
+    core.error(err.name + ": " + err.message);
     core.setOutput("updated", false);
   }
 };

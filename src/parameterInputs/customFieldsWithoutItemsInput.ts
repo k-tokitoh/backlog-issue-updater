@@ -1,3 +1,4 @@
+import * as core from "@actions/core";
 import Client, { Issue } from "../client";
 import ParameterInput from "./parameterInput";
 
@@ -26,9 +27,7 @@ export default class CustomFieldsWithoutItemsInput extends ParameterInput {
       (accumulator: { [key in string]: string }, field) => {
         const customField = customFields.find((f) => f.name === field.name);
         if (!customField) {
-          console.error(
-            `custom field "${field.name}" is queried, but not found.`
-          );
+          core.error(`custom field "${field.name}" is queried, but not found.`);
           return accumulator;
         }
         const key = `customField_${customField.id}`;

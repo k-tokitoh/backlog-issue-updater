@@ -1,3 +1,4 @@
+import * as core from "@actions/core";
 import Client, { Issue } from "./client";
 import { BareInputName, BareInputs } from "./constants";
 import { Params } from "./parameterInputs/parameterInput";
@@ -31,7 +32,7 @@ export default class ParamsBuilder {
         try {
           if (input) return await input.toParams(client, issue);
         } catch (err) {
-          console.error(err.name + ": " + err.message);
+          core.error(err.name + ": " + err.message);
         }
       })
     );

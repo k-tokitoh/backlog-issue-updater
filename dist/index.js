@@ -24,39 +24,35 @@ const url_1 = __nccwpck_require__(835);
 class Client {
     constructor(host, apiKey) {
         this.getIssue = ({ urlParams: { issueIdOrKey } }) => __awaiter(this, void 0, void 0, function* () {
-            const body = yield this.fetch({
+            return yield this.fetch({
                 method: "GET",
                 path: `/issues/${issueIdOrKey}`,
                 contentType: "application/json",
             });
-            return body;
         });
         this.getCustomFields = ({ urlParams: { projectIdOrKey }, }) => __awaiter(this, void 0, void 0, function* () {
-            const body = yield this.fetch({
+            return yield this.fetch({
                 method: "GET",
                 path: `/projects/${projectIdOrKey}/customFields`,
                 contentType: "application/json",
             });
-            return body;
         });
         this.getStatuses = ({ urlParams: { projectIdOrKey }, }) => __awaiter(this, void 0, void 0, function* () {
-            const body = yield this.fetch({
+            return yield this.fetch({
                 method: "GET",
                 path: `/projects/${projectIdOrKey}/statuses`,
                 contentType: "application/json",
             });
-            return body;
         });
         this.patchIssue = ({ urlParams: { issueIdOrKey }, requestParams }) => __awaiter(this, void 0, void 0, function* () {
-            const body = yield this.fetch({
+            return yield this.fetch({
                 method: "PATCH",
                 path: `/issues/${issueIdOrKey}`,
                 requestParams: requestParams,
                 contentType: "application/x-www-form-urlencoded",
             });
-            return body;
         });
-        this.fetch = ({ method, path, queryParams, requestParams, contentType, }) => __awaiter(this, void 0, void 0, function* () {
+        this.fetch = ({ method, path, queryParams, requestParams, contentType }) => __awaiter(this, void 0, void 0, function* () {
             const body = (() => {
                 switch (contentType) {
                     case "application/json":
@@ -77,6 +73,8 @@ class Client {
                 body: body,
                 headers: { "Content-Type": contentType },
             });
+            if (!res.ok)
+                throw new Error(yield res.text());
             return yield res.json();
         });
         this.host = host;
@@ -84,6 +82,22 @@ class Client {
     }
 }
 exports.default = Client;
+
+
+/***/ }),
+
+/***/ 105:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.bareInputNames = void 0;
+exports.bareInputNames = [
+    "statusName",
+    "customFieldsWithItems",
+    "customFieldsWithoutItems",
+];
 
 
 /***/ }),
@@ -127,17 +141,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const client_1 = __importDefault(__nccwpck_require__(565));
-const statusNameInput_1 = __importDefault(__nccwpck_require__(323));
-const customFieldsWithItemsInput_1 = __importDefault(__nccwpck_require__(161));
-const customFieldsWithoutItemsInput_1 = __importDefault(__nccwpck_require__(422));
-const inputMappers = [
-    { name: "statusName", klass: statusNameInput_1.default },
-    { name: "customFieldsWithItems", klass: customFieldsWithItemsInput_1.default },
-    {
-        name: "customFieldsWithoutItems",
-        klass: customFieldsWithoutItemsInput_1.default,
-    },
-];
+const paramsBuilder_1 = __importDefault(__nccwpck_require__(730));
+const constants_1 = __nccwpck_require__(105);
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const host = core.getInput("host");
@@ -147,21 +152,22 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
         const issue = yield client.getIssue({
             urlParams: { issueIdOrKey: issueKey },
         });
-        const inputs = inputMappers
-            .map((mapper) => {
-            const bareInput = core.getInput(mapper.name);
-            return bareInput ? new mapper.klass(bareInput) : null;
-        })
-            .filter((input) => Boolean(input));
-        const paramsArray = yield Promise.all(inputs.map((input) => __awaiter(void 0, void 0, void 0, function* () { return yield input.toParams(client, issue); })));
-        const params = Object.assign({}, ...paramsArray);
-        yield client.patchIssue({
+        const bareInputs = constants_1.bareInputNames.reduce((accumulator, name) => {
+            accumulator[name] = core.getInput(name);
+            return accumulator;
+        }, {});
+        const params = yield paramsBuilder_1.default.execute(bareInputs, client, issue);
+        core.info(`params: ${JSON.stringify(params)}`);
+        const patchedIssue = yield client.patchIssue({
             urlParams: { issueIdOrKey: issueKey },
             requestParams: params,
         });
+        core.info(`patchedIssue: ${JSON.stringify(patchedIssue)}`);
+        core.setOutput("updated", true);
     }
-    catch (error) {
-        core.setFailed(error.message);
+    catch (err) {
+        core.error(err.name + ": " + err.message);
+        core.setOutput("updated", false);
     }
 });
 main();
@@ -170,10 +176,29 @@ main();
 /***/ }),
 
 /***/ 161:
-/***/ (function(__unused_webpack_module, exports) {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -183,9 +208,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-class CustomFieldsWithItemsInput {
+const core = __importStar(__nccwpck_require__(186));
+const parameterInput_1 = __importDefault(__nccwpck_require__(968));
+class CustomFieldsWithItemsInput extends parameterInput_1.default {
     constructor(bareInput) {
+        super();
         this.value = JSON.parse(bareInput);
     }
     toParams(client, issue) {
@@ -195,13 +226,18 @@ class CustomFieldsWithItemsInput {
                 urlParams: { projectIdOrKey: String(issue.projectId) },
             });
             return customFieldsToPatch.reduce((accumulator, field) => {
-                var _a;
                 const customField = customFields.find((f) => f.name === field.name);
-                const key = `customField_${customField === null || customField === void 0 ? void 0 : customField.id}`;
-                const itemId = (_a = customField === null || customField === void 0 ? void 0 : customField.items.find((item) => item.name === field.itemName)) === null || _a === void 0 ? void 0 : _a.id;
-                if (!itemId)
+                if (!customField) {
+                    core.error(`custom field "${field.name}" is queried, but not found.`);
                     return accumulator;
-                accumulator[key] = itemId;
+                }
+                const key = `customField_${customField.id}`;
+                const item = customField.items.find((item) => item.name === field.itemName);
+                if (!item) {
+                    core.error(`custom field item "${field.name}" is queried, but not found.`);
+                    return accumulator;
+                }
+                accumulator[key] = item.id;
                 return accumulator;
             }, {});
         });
@@ -222,10 +258,29 @@ exports.default = CustomFieldsWithItemsInput;
 /***/ }),
 
 /***/ 422:
-/***/ (function(__unused_webpack_module, exports) {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -235,9 +290,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-class CustomFieldsWithoutItemsInput {
+const core = __importStar(__nccwpck_require__(186));
+const parameterInput_1 = __importDefault(__nccwpck_require__(968));
+class CustomFieldsWithoutItemsInput extends parameterInput_1.default {
     constructor(bareInput) {
+        super();
         this.value = JSON.parse(bareInput);
     }
     toParams(client, issue) {
@@ -247,9 +308,12 @@ class CustomFieldsWithoutItemsInput {
                 urlParams: { projectIdOrKey: String(issue.projectId) },
             });
             return valuesToPatch.reduce((accumulator, field) => {
-                var _a;
-                const id = (_a = customFields.find((f) => f.name === field.name)) === null || _a === void 0 ? void 0 : _a.id;
-                const key = `customField_${id}`;
+                const customField = customFields.find((f) => f.name === field.name);
+                if (!customField) {
+                    core.error(`custom field "${field.name}" is queried, but not found.`);
+                    return accumulator;
+                }
+                const key = `customField_${customField.id}`;
                 accumulator[key] = field.value;
                 return accumulator;
             }, {});
@@ -270,8 +334,21 @@ exports.default = CustomFieldsWithoutItemsInput;
 
 /***/ }),
 
+/***/ 968:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+class ParameterInput {
+}
+exports.default = ParameterInput;
+
+
+/***/ }),
+
 /***/ 323:
-/***/ (function(__unused_webpack_module, exports) {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -284,23 +361,95 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-class StatusNameInput {
+const parameterInput_1 = __importDefault(__nccwpck_require__(968));
+class StatusNameInput extends parameterInput_1.default {
     constructor(bareInput) {
+        super();
         this.value = bareInput;
     }
     toParams(client, issue) {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const statuses = yield client.getStatuses({
                 urlParams: { projectIdOrKey: String(issue.projectId) },
             });
-            const statusId = (_a = statuses.find((status) => status.name === this.value)) === null || _a === void 0 ? void 0 : _a.id;
-            return { statusId: statusId };
+            const status = statuses.find((status) => status.name === this.value);
+            if (!status)
+                throw new Error(`status "${this.value}" is queried, but not found.`);
+            return { statusId: status.id };
         });
     }
 }
 exports.default = StatusNameInput;
+
+
+/***/ }),
+
+/***/ 730:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core = __importStar(__nccwpck_require__(186));
+const statusNameInput_1 = __importDefault(__nccwpck_require__(323));
+const customFieldsWithItemsInput_1 = __importDefault(__nccwpck_require__(161));
+const customFieldsWithoutItemsInput_1 = __importDefault(__nccwpck_require__(422));
+const inputClasses = {
+    statusName: statusNameInput_1.default,
+    customFieldsWithItems: customFieldsWithItemsInput_1.default,
+    customFieldsWithoutItems: customFieldsWithoutItemsInput_1.default,
+};
+class ParamsBuilder {
+}
+exports.default = ParamsBuilder;
+ParamsBuilder.execute = (bareInputs, client, issue) => __awaiter(void 0, void 0, void 0, function* () {
+    const inputs = Object.entries(bareInputs).map(([name, value]) => value ? new inputClasses[name](value) : null);
+    const paramsArray = yield Promise.all(inputs.map((input) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            if (input)
+                return yield input.toParams(client, issue);
+        }
+        catch (err) {
+            core.error(err.name + ": " + err.message);
+        }
+    })));
+    return Object.assign({}, ...paramsArray.filter((input) => Boolean(input)));
+});
 
 
 /***/ }),
