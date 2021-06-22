@@ -163,11 +163,11 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
             requestParams: params,
         });
         core.info(`patchedIssue: ${JSON.stringify(patchedIssue)}`);
-        core.setOutput("updated", true);
+        core.setOutput("state", "updated");
     }
     catch (err) {
         core.error(err.name + ": " + err.message);
-        core.setOutput("updated", false);
+        core.setOutput("state", "notUpdated");
     }
 });
 main();

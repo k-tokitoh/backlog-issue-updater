@@ -31,10 +31,10 @@ const main: () => Promise<void> = async () => {
     });
 
     core.info(`patchedIssue: ${JSON.stringify(patchedIssue)}`);
-    core.setOutput("updated", true);
+    core.setOutput("state", "updated");
   } catch (err) {
     core.error(err.name + ": " + err.message);
-    core.setOutput("updated", false);
+    core.setOutput("state", "notUpdated");
   }
 };
 

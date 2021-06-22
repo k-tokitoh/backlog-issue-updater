@@ -14,8 +14,8 @@ inputs:
   customFieldsWithoutItems:
     required: false
 outputs:
-  updated:
-    description: "'true' or 'false'"
+  state:
+    description: "'updated' or 'notUpdated'"
 runs:
   using: "node12"
   main: "dist/index.js"
