@@ -36,7 +36,7 @@ type Asignee = {
 type CustomField = {
   id: number;
   name: string;
-  value: { id: number; name: string } | number | null;
+  value: { id: number; name: string } | number | string | null;
 };
 
 type GetIssueParams = {

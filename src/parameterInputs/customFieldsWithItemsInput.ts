@@ -31,6 +31,11 @@ export default class CustomFieldsWithItemsInput extends ParameterInput {
         if (!customField) {
           core.error(`custom field "${field.name}" is queried, but not found.`);
           return accumulator;
+        } else if (typeof customField.items === "undefined") {
+          core.error(
+            `custom field with items "${field.name}" is specified, but it's without items.`
+          );
+          return accumulator;
         }
         const key = `customField_${customField.id}`;
         const item = customField.items.find(
