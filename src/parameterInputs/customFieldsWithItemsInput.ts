@@ -5,15 +5,17 @@ import ParameterInput from "./parameterInput";
 type CustomFieldWithItem = {
   name: string;
   itemName: string;
-  upsert?: boolean;
+  mode?: "skipIfBlank" | "overwrite";
 };
 
 export default class CustomFieldsWithItemsInput extends ParameterInput {
-  private value: CustomFieldWithItem[];
+  private value: Required<CustomFieldWithItem>[];
 
   constructor(bareInput: string) {
     super();
-    this.value = JSON.parse(bareInput);
+    const value = JSON.parse(bareInput);
+    value.mode ||= "overwrite";
+    this.value = value;
   }
 
   public async toParams(client: Client, issue: Issue) {
@@ -49,10 +51,9 @@ export default class CustomFieldsWithItemsInput extends ParameterInput {
 
   private customFieldsToPatch(issue: Issue) {
     return this.value.filter((field) => {
-      if (typeof field.upsert === "undefined") field.upsert = true;
-      return (
-        field.upsert ||
-        !issue.customFields.find((f) => f.name === field.name)?.value
+      return !(
+        field.mode === "skipIfBlank" &&
+        issue.customFields.find((f) => f.name === field.name)?.value
       );
     });
   }
