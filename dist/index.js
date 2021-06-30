@@ -217,7 +217,9 @@ const parameterInput_1 = __importDefault(__nccwpck_require__(968));
 class CustomFieldsWithItemsInput extends parameterInput_1.default {
     constructor(bareInput) {
         super();
-        this.value = JSON.parse(bareInput);
+        const value = JSON.parse(bareInput);
+        value.mode || (value.mode = "overwrite");
+        this.value = value;
     }
     toParams(client, issue) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -229,6 +231,10 @@ class CustomFieldsWithItemsInput extends parameterInput_1.default {
                 const customField = customFields.find((f) => f.name === field.name);
                 if (!customField) {
                     core.error(`custom field "${field.name}" is queried, but not found.`);
+                    return accumulator;
+                }
+                else if (typeof customField.items === "undefined") {
+                    core.error(`custom field with items "${field.name}" is specified, but it's without items.`);
                     return accumulator;
                 }
                 const key = `customField_${customField.id}`;
@@ -245,10 +251,8 @@ class CustomFieldsWithItemsInput extends parameterInput_1.default {
     customFieldsToPatch(issue) {
         return this.value.filter((field) => {
             var _a;
-            if (typeof field.upsert === "undefined")
-                field.upsert = true;
-            return (field.upsert ||
-                !((_a = issue.customFields.find((f) => f.name === field.name)) === null || _a === void 0 ? void 0 : _a.value));
+            return !(field.mode === "skipIfBlank" &&
+                ((_a = issue.customFields.find((f) => f.name === field.name)) === null || _a === void 0 ? void 0 : _a.value));
         });
     }
 }
@@ -299,7 +303,9 @@ const parameterInput_1 = __importDefault(__nccwpck_require__(968));
 class CustomFieldsWithoutItemsInput extends parameterInput_1.default {
     constructor(bareInput) {
         super();
-        this.value = JSON.parse(bareInput);
+        const value = JSON.parse(bareInput);
+        value.mode || (value.mode = "overwrite");
+        this.value = value;
     }
     toParams(client, issue) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -313,8 +319,12 @@ class CustomFieldsWithoutItemsInput extends parameterInput_1.default {
                     core.error(`custom field "${field.name}" is queried, but not found.`);
                     return accumulator;
                 }
+                else if (typeof customField.items !== "undefined") {
+                    core.error(`custom field without items "${field.name}" is specified, but it's with items.`);
+                    return accumulator;
+                }
                 const key = `customField_${customField.id}`;
-                accumulator[key] = field.value;
+                accumulator[key] = this.fieldValue(field, issue);
                 return accumulator;
             }, {});
         });
@@ -322,11 +332,20 @@ class CustomFieldsWithoutItemsInput extends parameterInput_1.default {
     customFieldsToPatch(issue) {
         return this.value.filter((field) => {
             var _a;
-            if (typeof field.upsert === "undefined")
-                field.upsert = true;
-            return (field.upsert ||
-                !((_a = issue.customFields.find((f) => f.name === field.name)) === null || _a === void 0 ? void 0 : _a.value));
+            return !(field.mode === "skipIfBlank" &&
+                ((_a = issue.customFields.find((f) => f.name === field.name)) === null || _a === void 0 ? void 0 : _a.value));
         });
+    }
+    fieldValue(field, issue) {
+        var _a;
+        switch (field.mode) {
+            case "append":
+                const value = (_a = issue.customFields.find((f) => f.name === field.name)) === null || _a === void 0 ? void 0 : _a.value;
+                const valueStr = value ? String(value) : "";
+                return valueStr + field.value;
+            default:
+                return field.value;
+        }
     }
 }
 exports.default = CustomFieldsWithoutItemsInput;

@@ -23,13 +23,23 @@ steps:
       apiKey: ${{ secrets.BACKLOG_API_KEY }}
       issueKey: ${{ steps.get-issue-key.outputs.ISSUE_KEY }}
       statusName: "done"
-      customFieldsWithItems: >-
-        [{"name": "a custom field with items",
-        "itemName": "name of an item listed for this custom field"]
-      customFieldsWithoutItems: >-
-        [{"name": "a custom field without items",
-        "value": "value as you like",
-        "upsert": false},
-        {"name": "another custom field",
-        "value": "another value"]
+      customFieldsWithItems: |
+        [
+          {
+            "name": "a custom field with items",
+            "itemName": "name of an item listed for this custom field"
+          }
+        ]
+      customFieldsWithoutItems: |
+        [
+          {
+            "name": "another custom field",
+            "value": "another value"
+          },
+          {
+            "name": "a custom field without items",
+            "value": "value as you like",
+            "mode": "append"
+          }
+        ]
 ```
