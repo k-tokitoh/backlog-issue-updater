@@ -5,7 +5,7 @@ import ParameterInput from "./parameterInput";
 type CustomFieldWithoutItem = {
   name: string;
   value: string;
-  mode?: "skipIfBlank" | "overwrite";
+  mode?: "skipIfBlank" | "overwrite" | "append";
 };
 
 export default class CustomFieldsWithoutItemsInput extends ParameterInput {
@@ -28,6 +28,7 @@ export default class CustomFieldsWithoutItemsInput extends ParameterInput {
     return valuesToPatch.reduce(
       (accumulator: { [key in string]: string }, field) => {
         const customField = customFields.find((f) => f.name === field.name);
+
         if (!customField) {
           core.error(`custom field "${field.name}" is queried, but not found.`);
           return accumulator;
@@ -37,8 +38,10 @@ export default class CustomFieldsWithoutItemsInput extends ParameterInput {
           );
           return accumulator;
         }
+
         const key = `customField_${customField.id}`;
-        accumulator[key] = field.value;
+        accumulator[key] = this.fieldValue(field, issue);
+
         return accumulator;
       },
       {}
@@ -52,5 +55,18 @@ export default class CustomFieldsWithoutItemsInput extends ParameterInput {
         issue.customFields.find((f) => f.name === field.name)?.value
       );
     });
+  }
+
+  private fieldValue(field: Required<CustomFieldWithoutItem>, issue: Issue) {
+    switch (field.mode) {
+      case "append":
+        const value = issue.customFields.find(
+          (f) => f.name === field.name
+        )?.value;
+        const valueStr = value ? String(value) : "";
+        return valueStr + field.value;
+      default:
+        return field.value;
+    }
   }
 }
