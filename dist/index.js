@@ -251,7 +251,7 @@ class CustomFieldsWithItemsInput extends parameterInput_1.default {
     customFieldsToPatch(issue) {
         return this.value.filter((field) => {
             var _a;
-            return !(field.mode === "skipIfBlank" &&
+            return !(field.mode === "skipIfPresent" &&
                 ((_a = issue.customFields.find((f) => f.name === field.name)) === null || _a === void 0 ? void 0 : _a.value));
         });
     }
@@ -332,7 +332,7 @@ class CustomFieldsWithoutItemsInput extends parameterInput_1.default {
     customFieldsToPatch(issue) {
         return this.value.filter((field) => {
             var _a;
-            return !(field.mode === "skipIfBlank" &&
+            return !(field.mode === "skipIfPresent" &&
                 ((_a = issue.customFields.find((f) => f.name === field.name)) === null || _a === void 0 ? void 0 : _a.value));
         });
     }

@@ -5,7 +5,7 @@ import ParameterInput from "./parameterInput";
 type CustomFieldWithItem = {
   name: string;
   itemName: string;
-  mode?: "skipIfBlank" | "overwrite";
+  mode?: "skipIfPresent" | "overwrite";
 };
 
 export default class CustomFieldsWithItemsInput extends ParameterInput {
@@ -57,7 +57,7 @@ export default class CustomFieldsWithItemsInput extends ParameterInput {
   private customFieldsToPatch(issue: Issue) {
     return this.value.filter((field) => {
       return !(
-        field.mode === "skipIfBlank" &&
+        field.mode === "skipIfPresent" &&
         issue.customFields.find((f) => f.name === field.name)?.value
       );
     });
