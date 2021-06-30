@@ -342,7 +342,7 @@ class CustomFieldsWithoutItemsInput extends parameterInput_1.default {
             case "append":
                 const value = (_a = issue.customFields.find((f) => f.name === field.name)) === null || _a === void 0 ? void 0 : _a.value;
                 const valueStr = value ? String(value) : "";
-                return valueStr + field.value;
+                return [valueStr, field.value].join(" ");
             default:
                 return field.value;
         }

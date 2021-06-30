@@ -64,7 +64,7 @@ export default class CustomFieldsWithoutItemsInput extends ParameterInput {
           (f) => f.name === field.name
         )?.value;
         const valueStr = value ? String(value) : "";
-        return valueStr + field.value;
+        return [valueStr, field.value].join(" ");
       default:
         return field.value;
     }
